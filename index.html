@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我的第一本识字绘本</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "STKaiti","Kaiti SC","KaiTi","PingFang SC","Microsoft YaHei",serif; background: #fffef6; color: #3a2010; overflow-x: hidden; }
+
+/* ── 导航 ── */
+.nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex; justify-content: center; align-items: center; padding: 12px 20px; background: rgba(255,254,246,0.9); backdrop-filter: blur(8px); border-bottom: 1px solid #f0e0d0; }
+.nav .mode-switch { display: flex; gap: 8px; }
+.nav .mode-switch button { background: #f0e0d0; color: #5a3020; border: none; padding: 10px 20px; border-radius: 24px; font-size: 16px; font-family: inherit; cursor: pointer; transition: background 0.2s; }
+.nav .mode-switch button:hover { background: #d8b090; }
+.nav .mode-switch button.active { background: #e08050; color: #fff; }
+
+/* ── 左右翻页箭头 ── */
+.arrow-btn { position: fixed; top: 50%; transform: translateY(-50%); z-index: 99; width: 56px; height: 56px; border-radius: 50%; background: rgba(255,240,220,0.85); border: 2px solid #e8c8a8; cursor: pointer; font-size: 28px; color: #a06040; display: flex; align-items: center; justify-content: center; transition: all 0.2s; backdrop-filter: blur(4px); }
+.arrow-btn:hover { background: rgba(224,128,80,0.2); border-color: #d08050; transform: translateY(-50%) scale(1.08); }
+.arrow-btn:active { transform: translateY(-50%) scale(0.95); }
+.arrow-left { left: 12px; }
+.arrow-right { right: 12px; }
+
+/* ── 识字页 ── */
+.page { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 70px 24px 24px; text-align: center; display: none; }
+.page.active { display: flex; }
+.char-illustration { margin-bottom: 10px; }
+.char-illustration img { max-width: 70vw; max-height: 35vh; border-radius: 16px; box-shadow: 0 4px 20px rgba(180,120,80,0.12); }
+.char-illustration .no-img { width: 260px; height: 200px; background: #f8f0e8; border-radius: 16px; display: flex; align-items: center; justify-content: center; color: #c8b8a8; font-size: 16px; }
+.char-big { font-size: 80px; color: #4a2010; margin: 4px 0; line-height: 1.1; font-weight: bold; position: relative; }
+.char-pinyin { font-size: 24px; color: #a06040; margin-bottom: 8px; }
+.char-text { font-size: 20px; color: #6a4030; max-width: 460px; line-height: 1.5; }
+.page-num { position: fixed; bottom: 16px; color: #c8a890; font-size: 13px; }
+.speaker { display: inline-block; width: 34px; height: 34px; border-radius: 50%; background: #f0e0d0; border: none; cursor: pointer; font-size: 17px; line-height: 34px; text-align: center; margin-left: 10px; vertical-align: middle; transition: all 0.2s; }
+.speaker:hover { background: #e08050; transform: scale(1.1); }
+.speaker.playing { background: #e08050; animation: pulse 0.6s infinite; }
+@keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.15); } }
+.char-row, .text-row { display: flex; align-items: center; justify-content: center; gap: 4px; }
+.chapter-label { font-size: 14px; color: #c09070; margin-bottom: 8px; }
+.chapter-page { justify-content: center; }
+.chapter-title { font-size: 36px; color: #c05030; margin-bottom: 16px; font-weight: bold; }
+.chapter-chars { font-size: 42px; color: #8a5040; letter-spacing: 12px; margin-bottom: 24px; }
+
+/* ── 测验 ── */
+.quiz { min-height: 100vh; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 80px 24px 40px; }
+.quiz.active { display: flex; }
+.quiz-question { font-size: 26px; color: #5a3020; margin-bottom: 12px; }
+.quiz-options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; max-width: 400px; width: 100%; }
+.quiz-options button { font-size: 36px; padding: 18px; border-radius: 16px; border: 2px solid #e8c8a8; background: #fffef6; cursor: pointer; font-family: inherit; color: #4a2010; transition: all 0.2s; }
+.quiz-options button:hover { background: #fff0e0; border-color: #d09060; transform: scale(1.03); }
+.quiz-options button.correct { background: #d4edc8; border-color: #7ab860; animation: pop 0.3s; }
+.quiz-options button.wrong { background: #fcd8d0; border-color: #d06050; animation: shake 0.4s; }
+.quiz-feedback { font-size: 24px; margin-top: 20px; min-height: 36px; text-align: center; }
+.quiz-feedback.good { color: #5a9030; }
+.quiz-feedback.bad { color: #c04030; }
+@keyframes pop { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+@keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+
+/* ── 测验结果 ── */
+.result { min-height: 100vh; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 60px 24px; text-align: center; }
+.result.active { display: flex; }
+.result h2 { font-size: 32px; color: #5a3020; margin-bottom: 20px; }
+.result .score { font-size: 64px; color: #e08050; font-weight: bold; margin-bottom: 12px; }
+.result .msg { font-size: 20px; color: #6a4030; margin-bottom: 24px; }
+.result .needs-work { margin-bottom: 28px; }
+.result .needs-work span { display: inline-block; font-size: 48px; margin: 6px; padding: 8px 16px; background: #fff0e0; border-radius: 12px; cursor: pointer; transition: transform 0.2s; }
+.result .needs-work span:hover { transform: scale(1.1); background: #ffe0c8; }
+.result button { font-size: 20px; padding: 14px 36px; border-radius: 28px; border: none; background: #e08050; color: #fff; cursor: pointer; font-family: inherit; margin: 6px; transition: background 0.2s; }
+.result button:hover { background: #c06030; }
+.result button.secondary { background: #e8c8a8; color: #5a3020; }
+.result button.secondary:hover { background: #d8b090; }
+
+/* ── 侧边栏 ── */
+.sidebar-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 200; display: none; }
+.sidebar-overlay.show { display: block; }
+.sidebar { position: fixed; top: 0; left: 0; bottom: 0; width: 260px; background: #fffef6; z-index: 201; box-shadow: 4px 0 24px rgba(0,0,0,0.1); transform: translateX(-100%); transition: transform 0.25s ease; overflow-y: auto; padding: 20px; }
+.sidebar.show { transform: translateX(0); }
+.sidebar h3 { font-size: 20px; color: #c05030; margin-bottom: 16px; text-align: center; }
+.sidebar-item { display: block; width: 100%; padding: 12px 16px; margin: 4px 0; border-radius: 12px; border: none; background: transparent; font-size: 16px; color: #5a3020; font-family: inherit; cursor: pointer; text-align: left; transition: all 0.15s; }
+.sidebar-item:hover { background: #fff0e0; }
+.sidebar-item.active { background: #ffe0c8; color: #c05030; font-weight: bold; }
+.chapter-icon { position: fixed; top: 10px; left: 14px; z-index: 101; width: 42px; height: 42px; border-radius: 50%; background: rgba(255,240,220,0.9); border: 2px solid #e8c8a8; cursor: pointer; font-size: 20px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+.chapter-icon:hover { background: #e08050; color: #fff; border-color: #e08050; }
+.nav { justify-content: flex-end; }
+
+/* ── 测验模式 ── */
+.quiz-modes { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; }
+.quiz-modes button { font-size: 15px; padding: 8px 16px; border-radius: 20px; border: 2px solid #e8c8a8; background: #fffef6; color: #5a3020; font-family: inherit; cursor: pointer; transition: all 0.2s; }
+.quiz-modes button:hover { background: #fff0e0; }
+.quiz-modes button.active { background: #e08050; color: #fff; border-color: #e08050; }
+</style>
+</head>
+<body>
+
+<!-- 顶部导航 -->
+<button class="chapter-icon" onclick="toggleSidebar()" title="章节">☰</button>
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+<div class="sidebar" id="sidebar">
+  <h3>📖 目录</h3>
+  <div id="sidebarList"></div>
+</div>
+<div class="nav" id="nav">
+  <div class="mode-switch">
+    <button id="btnRead" class="active" onclick="switchMode('read')">📖 阅读</button>
+    <button id="btnQuiz" onclick="switchMode('quiz')">🎯 测验</button>
+  </div>
+</div>
+
+<!-- 左右翻页箭头 -->
+<button class="arrow-btn arrow-left" onclick="prevPage()" id="btnPrev" title="上一页">‹</button>
+<button class="arrow-btn arrow-right" onclick="nextPage()" id="btnNext" title="下一页">›</button>
+
+<!-- 识字页 -->
+<div id="pages">
+  <div class="page chapter-page" id="page-ch0"><div class="chapter-title">第一章：大自然的朋友</div><div class="chapter-chars">山 水 日 月 火</div><div class="page-num">第 1 章 / 共 10 章</div></div><div class="page" id="page-1"><div class="chapter-label">第一章：大自然的朋友</div><div class="char-illustration"><img src="images/img_1.png" alt="山"></div><div class="char-row"><div class="char-big">山</div><button class="speaker char-speaker" onclick="speakChar('山')" title="听发音">🔊</button></div><div class="char-pinyin">shān</div><div class="text-row"><div class="char-text">高高的山，一座连着一座。</div><button class="speaker text-speaker" onclick="speakPageText(1)" title="听句子">🔊</button></div><div class="page-num">1 / 50</div></div><div class="page" id="page-2"><div class="chapter-label">第一章：大自然的朋友</div><div class="char-illustration"><img src="images/img_2.png" alt="水"></div><div class="char-row"><div class="char-big">水</div><button class="speaker char-speaker" onclick="speakChar('水')" title="听发音">🔊</button></div><div class="char-pinyin">shuǐ</div><div class="text-row"><div class="char-text">清清的水，哗啦啦地向前流。</div><button class="speaker text-speaker" onclick="speakPageText(2)" title="听句子">🔊</button></div><div class="page-num">2 / 50</div></div><div class="page" id="page-3"><div class="chapter-label">第一章：大自然的朋友</div><div class="char-illustration"><img src="images/img_3.png" alt="日"></div><div class="char-row"><div class="char-big">日</div><button class="speaker char-speaker" onclick="speakChar('日')" title="听发音">🔊</button></div><div class="char-pinyin">rì</div><div class="text-row"><div class="char-text">红日从东方升起，新的一天开始了。</div><button class="speaker text-speaker" onclick="speakPageText(3)" title="听句子">🔊</button></div><div class="page-num">3 / 50</div></div><div class="page" id="page-4"><div class="chapter-label">第一章：大自然的朋友</div><div class="char-illustration"><img src="images/img_4.png" alt="月"></div><div class="char-row"><div class="char-big">月</div><button class="speaker char-speaker" onclick="speakChar('月')" title="听发音">🔊</button></div><div class="char-pinyin">yuè</div><div class="text-row"><div class="char-text">弯弯的月儿像小船，挂在天上亮晶晶。</div><button class="speaker text-speaker" onclick="speakPageText(4)" title="听句子">🔊</button></div><div class="page-num">4 / 50</div></div><div class="page" id="page-5"><div class="chapter-label">第一章：大自然的朋友</div><div class="char-illustration"><img src="images/img_5.png" alt="火"></div><div class="char-row"><div class="char-big">火</div><button class="speaker char-speaker" onclick="speakChar('火')" title="听发音">🔊</button></div><div class="char-pinyin">huǒ</div><div class="text-row"><div class="char-text">小火苗跳啊跳，带来光和温暖。</div><button class="speaker text-speaker" onclick="speakPageText(5)" title="听句子">🔊</button></div><div class="page-num">5 / 50</div></div><div class="page chapter-page" id="page-ch1"><div class="chapter-title">第二章：美丽的大地</div><div class="chapter-chars">木 田 雨 云 土</div><div class="page-num">第 2 章 / 共 10 章</div></div><div class="page" id="page-6"><div class="chapter-label">第二章：美丽的大地</div><div class="char-illustration"><img src="images/img_6.png" alt="木"></div><div class="char-row"><div class="char-big">木</div><button class="speaker char-speaker" onclick="speakChar('木')" title="听发音">🔊</button></div><div class="char-pinyin">mù</div><div class="text-row"><div class="char-text">路边的树木绿绿的，看着真舒服。</div><button class="speaker text-speaker" onclick="speakPageText(6)" title="听句子">🔊</button></div><div class="page-num">6 / 50</div></div><div class="page" id="page-7"><div class="chapter-label">第二章：美丽的大地</div><div class="char-illustration"><img src="images/img_7.png" alt="田"></div><div class="char-row"><div class="char-big">田</div><button class="speaker char-speaker" onclick="speakChar('田')" title="听发音">🔊</button></div><div class="char-pinyin">tián</div><div class="text-row"><div class="char-text">田里的稻谷金灿灿，秋天是丰收的季节。</div><button class="speaker text-speaker" onclick="speakPageText(7)" title="听句子">🔊</button></div><div class="page-num">7 / 50</div></div><div class="page" id="page-8"><div class="chapter-label">第二章：美丽的大地</div><div class="char-illustration"><img src="images/img_8.png" alt="雨"></div><div class="char-row"><div class="char-big">雨</div><button class="speaker char-speaker" onclick="speakChar('雨')" title="听发音">🔊</button></div><div class="char-pinyin">yǔ</div><div class="text-row"><div class="char-text">小雨滴答滴答，落在绿色的叶子上。</div><button class="speaker text-speaker" onclick="speakPageText(8)" title="听句子">🔊</button></div><div class="page-num">8 / 50</div></div><div class="page" id="page-9"><div class="chapter-label">第二章：美丽的大地</div><div class="char-illustration"><img src="images/img_9.png" alt="云"></div><div class="char-row"><div class="char-big">云</div><button class="speaker char-speaker" onclick="speakChar('云')" title="听发音">🔊</button></div><div class="char-pinyin">yún</div><div class="text-row"><div class="char-text">白云飘在蓝天上，像软软的棉花糖。</div><button class="speaker text-speaker" onclick="speakPageText(9)" title="听句子">🔊</button></div><div class="page-num">9 / 50</div></div><div class="page" id="page-10"><div class="chapter-label">第二章：美丽的大地</div><div class="char-illustration"><img src="images/img_10.png" alt="土"></div><div class="char-row"><div class="char-big">土</div><button class="speaker char-speaker" onclick="speakChar('土')" title="听发音">🔊</button></div><div class="char-pinyin">tǔ</div><div class="text-row"><div class="char-text">地上有好多松软的土，小种子睡在土里。</div><button class="speaker text-speaker" onclick="speakPageText(10)" title="听句子">🔊</button></div><div class="page-num">10 / 50</div></div><div class="page chapter-page" id="page-ch2"><div class="chapter-title">第三章：看看我的身体</div><div class="chapter-chars">人 口 目 手 足</div><div class="page-num">第 3 章 / 共 10 章</div></div><div class="page" id="page-11"><div class="chapter-label">第三章：看看我的身体</div><div class="char-illustration"><img src="images/img_11.png" alt="人"></div><div class="char-row"><div class="char-big">人</div><button class="speaker char-speaker" onclick="speakChar('人')" title="听发音">🔊</button></div><div class="char-pinyin">rén</div><div class="text-row"><div class="char-text">一个小朋友在草地上快乐地走。</div><button class="speaker text-speaker" onclick="speakPageText(11)" title="听句子">🔊</button></div><div class="page-num">11 / 50</div></div><div class="page" id="page-12"><div class="chapter-label">第三章：看看我的身体</div><div class="char-illustration"><img src="images/img_12.png" alt="口"></div><div class="char-row"><div class="char-big">口</div><button class="speaker char-speaker" onclick="speakChar('口')" title="听发音">🔊</button></div><div class="char-pinyin">kǒu</div><div class="text-row"><div class="char-text">张开小口笑一笑，露出白白的牙齿。</div><button class="speaker text-speaker" onclick="speakPageText(12)" title="听句子">🔊</button></div><div class="page-num">12 / 50</div></div><div class="page" id="page-13"><div class="chapter-label">第三章：看看我的身体</div><div class="char-illustration"><img src="images/img_13.png" alt="目"></div><div class="char-row"><div class="char-big">目</div><button class="speaker char-speaker" onclick="speakChar('目')" title="听发音">🔊</button></div><div class="char-pinyin">mù</div><div class="text-row"><div class="char-text">闭上眼睛睡一觉，做个甜甜的美梦。</div><button class="speaker text-speaker" onclick="speakPageText(13)" title="听句子">🔊</button></div><div class="page-num">13 / 50</div></div><div class="page" id="page-14"><div class="chapter-label">第三章：看看我的身体</div><div class="char-illustration"><img src="images/img_14.png" alt="手"></div><div class="char-row"><div class="char-big">手</div><button class="speaker char-speaker" onclick="speakChar('手')" title="听发音">🔊</button></div><div class="char-pinyin">shǒu</div><div class="text-row"><div class="char-text">拍拍小手点点头，我们一起来唱歌。</div><button class="speaker text-speaker" onclick="speakPageText(14)" title="听句子">🔊</button></div><div class="page-num">14 / 50</div></div><div class="page" id="page-15"><div class="chapter-label">第三章：看看我的身体</div><div class="char-illustration"><img src="images/img_15.png" alt="足"></div><div class="char-row"><div class="char-big">足</div><button class="speaker char-speaker" onclick="speakChar('足')" title="听发音">🔊</button></div><div class="char-pinyin">zú</div><div class="text-row"><div class="char-text">小脚丫跑得快，一步步走在大地上。</div><button class="speaker text-speaker" onclick="speakPageText(15)" title="听句子">🔊</button></div><div class="page-num">15 / 50</div></div><div class="page chapter-page" id="page-ch3"><div class="chapter-title">第四章：可爱的动物们</div><div class="chapter-chars">鸟 鱼 马 牛 羊</div><div class="page-num">第 4 章 / 共 10 章</div></div><div class="page" id="page-16"><div class="chapter-label">第四章：可爱的动物们</div><div class="char-illustration"><img src="images/img_16.png" alt="鸟"></div><div class="char-row"><div class="char-big">鸟</div><button class="speaker char-speaker" onclick="speakChar('鸟')" title="听发音">🔊</button></div><div class="char-pinyin">niǎo</div><div class="text-row"><div class="char-text">一只小鸟站在枝头，叽叽喳喳唱着歌。</div><button class="speaker text-speaker" onclick="speakPageText(16)" title="听句子">🔊</button></div><div class="page-num">16 / 50</div></div><div class="page" id="page-17"><div class="chapter-label">第四章：可爱的动物们</div><div class="char-illustration"><img src="images/img_17.png" alt="鱼"></div><div class="char-row"><div class="char-big">鱼</div><button class="speaker char-speaker" onclick="speakChar('鱼')" title="听发音">🔊</button></div><div class="char-pinyin">yú</div><div class="text-row"><div class="char-text">鱼儿在水里游来游去，自在极了。</div><button class="speaker text-speaker" onclick="speakPageText(17)" title="听句子">🔊</button></div><div class="page-num">17 / 50</div></div><div class="page" id="page-18"><div class="chapter-label">第四章：可爱的动物们</div><div class="char-illustration"><img src="images/img_18.png" alt="马"></div><div class="char-row"><div class="char-big">马</div><button class="speaker char-speaker" onclick="speakChar('马')" title="听发音">🔊</button></div><div class="char-pinyin">mǎ</div><div class="text-row"><div class="char-text">小马跑起来真快，哒哒哒，扬起灰尘。</div><button class="speaker text-speaker" onclick="speakPageText(18)" title="听句子">🔊</button></div><div class="page-num">18 / 50</div></div><div class="page" id="page-19"><div class="chapter-label">第四章：可爱的动物们</div><div class="char-illustration"><img src="images/img_19.png" alt="牛"></div><div class="char-row"><div class="char-big">牛</div><button class="speaker char-speaker" onclick="speakChar('牛')" title="听发音">🔊</button></div><div class="char-pinyin">niú</div><div class="text-row"><div class="char-text">老牛在田里慢慢走，帮农民伯伯耕地。</div><button class="speaker text-speaker" onclick="speakPageText(19)" title="听句子">🔊</button></div><div class="page-num">19 / 50</div></div><div class="page" id="page-20"><div class="chapter-label">第四章：可爱的动物们</div><div class="char-illustration"><img src="images/img_20.png" alt="羊"></div><div class="char-row"><div class="char-big">羊</div><button class="speaker char-speaker" onclick="speakChar('羊')" title="听发音">🔊</button></div><div class="char-pinyin">yáng</div><div class="text-row"><div class="char-text">小绵羊身上毛茸茸，就像一朵大棉花。</div><button class="speaker text-speaker" onclick="speakPageText(20)" title="听句子">🔊</button></div><div class="page-num">20 / 50</div></div><div class="page chapter-page" id="page-ch4"><div class="chapter-title">第五章：美味的食物</div><div class="chapter-chars">米 瓜 果 竹 豆</div><div class="page-num">第 5 章 / 共 10 章</div></div><div class="page" id="page-21"><div class="chapter-label">第五章：美味的食物</div><div class="char-illustration"><img src="images/img_21.png" alt="米"></div><div class="char-row"><div class="char-big">米</div><button class="speaker char-speaker" onclick="speakChar('米')" title="听发音">🔊</button></div><div class="char-pinyin">mǐ</div><div class="text-row"><div class="char-text">白白的米饭香喷喷，宝宝吃得饱饱的。</div><button class="speaker text-speaker" onclick="speakPageText(21)" title="听句子">🔊</button></div><div class="page-num">21 / 50</div></div><div class="page" id="page-22"><div class="chapter-label">第五章：美味的食物</div><div class="char-illustration"><img src="images/img_22.png" alt="瓜"></div><div class="char-row"><div class="char-big">瓜</div><button class="speaker char-speaker" onclick="speakChar('瓜')" title="听发音">🔊</button></div><div class="char-pinyin">guā</div><div class="text-row"><div class="char-text">大西瓜圆又大，切开红红的是瓜瓤。</div><button class="speaker text-speaker" onclick="speakPageText(22)" title="听句子">🔊</button></div><div class="page-num">22 / 50</div></div><div class="page" id="page-23"><div class="chapter-label">第五章：美味的食物</div><div class="char-illustration"><img src="images/img_23.png" alt="果"></div><div class="char-row"><div class="char-big">果</div><button class="speaker char-speaker" onclick="speakChar('果')" title="听发音">🔊</button></div><div class="char-pinyin">guǒ</div><div class="text-row"><div class="char-text">树上结满红红的果子，摘一个尝尝真甜。</div><button class="speaker text-speaker" onclick="speakPageText(23)" title="听句子">🔊</button></div><div class="page-num">23 / 50</div></div><div class="page" id="page-24"><div class="chapter-label">第五章：美味的食物</div><div class="char-illustration"><img src="images/img_24.png" alt="竹"></div><div class="char-row"><div class="char-big">竹</div><button class="speaker char-speaker" onclick="speakChar('竹')" title="听发音">🔊</button></div><div class="char-pinyin">zhú</div><div class="text-row"><div class="char-text">青青的竹子一节一节，熊猫最爱吃竹叶。</div><button class="speaker text-speaker" onclick="speakPageText(24)" title="听句子">🔊</button></div><div class="page-num">24 / 50</div></div><div class="page" id="page-25"><div class="chapter-label">第五章：美味的食物</div><div class="char-illustration"><img src="images/img_25.png" alt="豆"></div><div class="char-row"><div class="char-big">豆</div><button class="speaker char-speaker" onclick="speakChar('豆')" title="听发音">🔊</button></div><div class="char-pinyin">dòu</div><div class="text-row"><div class="char-text">小豆子一粒粒，长在豆荚里真可爱。</div><button class="speaker text-speaker" onclick="speakPageText(25)" title="听句子">🔊</button></div><div class="page-num">25 / 50</div></div><div class="page chapter-page" id="page-ch5"><div class="chapter-title">第六章：我的一家人</div><div class="chapter-chars">父 母 子 女 好</div><div class="page-num">第 6 章 / 共 10 章</div></div><div class="page" id="page-26"><div class="chapter-label">第六章：我的一家人</div><div class="char-illustration"><img src="images/img_26.png" alt="父"></div><div class="char-row"><div class="char-big">父</div><button class="speaker char-speaker" onclick="speakChar('父')" title="听发音">🔊</button></div><div class="char-pinyin">fù</div><div class="text-row"><div class="char-text">爸爸高高举起我，笑着说宝贝真棒。</div><button class="speaker text-speaker" onclick="speakPageText(26)" title="听句子">🔊</button></div><div class="page-num">26 / 50</div></div><div class="page" id="page-27"><div class="chapter-label">第六章：我的一家人</div><div class="char-illustration"><img src="images/img_27.png" alt="母"></div><div class="char-row"><div class="char-big">母</div><button class="speaker char-speaker" onclick="speakChar('母')" title="听发音">🔊</button></div><div class="char-pinyin">mǔ</div><div class="text-row"><div class="char-text">妈妈轻轻唱摇篮曲，宝宝快快睡觉。</div><button class="speaker text-speaker" onclick="speakPageText(27)" title="听句子">🔊</button></div><div class="page-num">27 / 50</div></div><div class="page" id="page-28"><div class="chapter-label">第六章：我的一家人</div><div class="char-illustration"><img src="images/img_28.png" alt="子"></div><div class="char-row"><div class="char-big">子</div><button class="speaker char-speaker" onclick="speakChar('子')" title="听发音">🔊</button></div><div class="char-pinyin">zǐ</div><div class="text-row"><div class="char-text">小宝宝是个可爱的孩子，全家都爱他。</div><button class="speaker text-speaker" onclick="speakPageText(28)" title="听句子">🔊</button></div><div class="page-num">28 / 50</div></div><div class="page" id="page-29"><div class="chapter-label">第六章：我的一家人</div><div class="char-illustration"><img src="images/img_29.png" alt="女"></div><div class="char-row"><div class="char-big">女</div><button class="speaker char-speaker" onclick="speakChar('女')" title="听发音">🔊</button></div><div class="char-pinyin">nǚ</div><div class="text-row"><div class="char-text">这个小女孩扎着小辫子，跳舞真好看。</div><button class="speaker text-speaker" onclick="speakPageText(29)" title="听句子">🔊</button></div><div class="page-num">29 / 50</div></div><div class="page" id="page-30"><div class="chapter-label">第六章：我的一家人</div><div class="char-illustration"><img src="images/img_30.png" alt="好"></div><div class="char-row"><div class="char-big">好</div><button class="speaker char-speaker" onclick="speakChar('好')" title="听发音">🔊</button></div><div class="char-pinyin">hǎo</div><div class="text-row"><div class="char-text">妈妈抱着宝宝，多么美好的画面啊。</div><button class="speaker text-speaker" onclick="speakPageText(30)" title="听句子">🔊</button></div><div class="page-num">30 / 50</div></div><div class="page chapter-page" id="page-ch6"><div class="chapter-title">第七章：上下和大小</div><div class="chapter-chars">上 下 大 小 中</div><div class="page-num">第 7 章 / 共 10 章</div></div><div class="page" id="page-31"><div class="chapter-label">第七章：上下和大小</div><div class="char-illustration"><img src="images/img_31.png" alt="上"></div><div class="char-row"><div class="char-big">上</div><button class="speaker char-speaker" onclick="speakChar('上')" title="听发音">🔊</button></div><div class="char-pinyin">shàng</div><div class="text-row"><div class="char-text">小猫咪跳到台阶上面，喵喵叫。</div><button class="speaker text-speaker" onclick="speakPageText(31)" title="听句子">🔊</button></div><div class="page-num">31 / 50</div></div><div class="page" id="page-32"><div class="chapter-label">第七章：上下和大小</div><div class="char-illustration"><img src="images/img_32.png" alt="下"></div><div class="char-row"><div class="char-big">下</div><button class="speaker char-speaker" onclick="speakChar('下')" title="听发音">🔊</button></div><div class="char-pinyin">xià</div><div class="text-row"><div class="char-text">小兔子从滑梯下面滑出来，真好玩。</div><button class="speaker text-speaker" onclick="speakPageText(32)" title="听句子">🔊</button></div><div class="page-num">32 / 50</div></div><div class="page" id="page-33"><div class="chapter-label">第七章：上下和大小</div><div class="char-illustration"><img src="images/img_33.png" alt="大"></div><div class="char-row"><div class="char-big">大</div><button class="speaker char-speaker" onclick="speakChar('大')" title="听发音">🔊</button></div><div class="char-pinyin">dà</div><div class="text-row"><div class="char-text">大哥哥张开手臂，像一只大鸟。</div><button class="speaker text-speaker" onclick="speakPageText(33)" title="听句子">🔊</button></div><div class="page-num">33 / 50</div></div><div class="page" id="page-34"><div class="chapter-label">第七章：上下和大小</div><div class="char-illustration"><img src="images/img_34.png" alt="小"></div><div class="char-row"><div class="char-big">小</div><button class="speaker char-speaker" onclick="speakChar('小')" title="听发音">🔊</button></div><div class="char-pinyin">xiǎo</div><div class="text-row"><div class="char-text">小蚂蚁力气很大，搬起一粒小豆子。</div><button class="speaker text-speaker" onclick="speakPageText(34)" title="听句子">🔊</button></div><div class="page-num">34 / 50</div></div><div class="page" id="page-35"><div class="chapter-label">第七章：上下和大小</div><div class="char-illustration"><img src="images/img_35.png" alt="中"></div><div class="char-row"><div class="char-big">中</div><button class="speaker char-speaker" onclick="speakChar('中')" title="听发音">🔊</button></div><div class="char-pinyin">zhōng</div><div class="text-row"><div class="char-text">小箭射中了靶心，不偏不倚在正中。</div><button class="speaker text-speaker" onclick="speakPageText(35)" title="听句子">🔊</button></div><div class="page-num">35 / 50</div></div><div class="page chapter-page" id="page-ch7"><div class="chapter-title">第八章：生活好帮手</div><div class="chapter-chars">刀 门 车 舟 衣</div><div class="page-num">第 8 章 / 共 10 章</div></div><div class="page" id="page-36"><div class="chapter-label">第八章：生活好帮手</div><div class="char-illustration"><img src="images/img_36.png" alt="刀"></div><div class="char-row"><div class="char-big">刀</div><button class="speaker char-speaker" onclick="speakChar('刀')" title="听发音">🔊</button></div><div class="char-pinyin">dāo</div><div class="text-row"><div class="char-text">小剪刀和刀子要小心用，宝宝不碰。</div><button class="speaker text-speaker" onclick="speakPageText(36)" title="听句子">🔊</button></div><div class="page-num">36 / 50</div></div><div class="page" id="page-37"><div class="chapter-label">第八章：生活好帮手</div><div class="char-illustration"><img src="images/img_37.png" alt="门"></div><div class="char-row"><div class="char-big">门</div><button class="speaker char-speaker" onclick="speakChar('门')" title="听发音">🔊</button></div><div class="char-pinyin">mén</div><div class="text-row"><div class="char-text">推开木门，走进温暖的家。</div><button class="speaker text-speaker" onclick="speakPageText(37)" title="听句子">🔊</button></div><div class="page-num">37 / 50</div></div><div class="page" id="page-38"><div class="chapter-label">第八章：生活好帮手</div><div class="char-illustration"><img src="images/img_38.png" alt="车"></div><div class="char-row"><div class="char-big">车</div><button class="speaker char-speaker" onclick="speakChar('车')" title="听发音">🔊</button></div><div class="char-pinyin">chē</div><div class="text-row"><div class="char-text">小汽车跑得快，四个轮子转呀转。</div><button class="speaker text-speaker" onclick="speakPageText(38)" title="听句子">🔊</button></div><div class="page-num">38 / 50</div></div><div class="page" id="page-39"><div class="chapter-label">第八章：生活好帮手</div><div class="char-illustration"><img src="images/img_39.png" alt="舟"></div><div class="char-row"><div class="char-big">舟</div><button class="speaker char-speaker" onclick="speakChar('舟')" title="听发音">🔊</button></div><div class="char-pinyin">zhōu</div><div class="text-row"><div class="char-text">一叶小舟漂在湖上，轻轻摇啊摇。</div><button class="speaker text-speaker" onclick="speakPageText(39)" title="听句子">🔊</button></div><div class="page-num">39 / 50</div></div><div class="page" id="page-40"><div class="chapter-label">第八章：生活好帮手</div><div class="char-illustration"><img src="images/img_40.png" alt="衣"></div><div class="char-row"><div class="char-big">衣</div><button class="speaker char-speaker" onclick="speakChar('衣')" title="听发音">🔊</button></div><div class="char-pinyin">yī</div><div class="text-row"><div class="char-text">穿上新衣服，宝宝真漂亮。</div><button class="speaker text-speaker" onclick="speakPageText(40)" title="听句子">🔊</button></div><div class="page-num">40 / 50</div></div><div class="page chapter-page" id="page-ch8"><div class="chapter-title">第九章：数字和天空</div><div class="chapter-chars">一 二 三 十 天</div><div class="page-num">第 9 章 / 共 10 章</div></div><div class="page" id="page-41"><div class="chapter-label">第九章：数字和天空</div><div class="char-illustration"><img src="images/img_41.png" alt="一"></div><div class="char-row"><div class="char-big">一</div><button class="speaker char-speaker" onclick="speakChar('一')" title="听发音">🔊</button></div><div class="char-pinyin">yī</div><div class="text-row"><div class="char-text">一字横着写，就像一根小木棍。</div><button class="speaker text-speaker" onclick="speakPageText(41)" title="听句子">🔊</button></div><div class="page-num">41 / 50</div></div><div class="page" id="page-42"><div class="chapter-label">第九章：数字和天空</div><div class="char-illustration"><img src="images/img_42.png" alt="二"></div><div class="char-row"><div class="char-big">二</div><button class="speaker char-speaker" onclick="speakChar('二')" title="听发音">🔊</button></div><div class="char-pinyin">èr</div><div class="text-row"><div class="char-text">一二三，二只小鸭鸭，跟着妈妈游。</div><button class="speaker text-speaker" onclick="speakPageText(42)" title="听句子">🔊</button></div><div class="page-num">42 / 50</div></div><div class="page" id="page-43"><div class="chapter-label">第九章：数字和天空</div><div class="char-illustration"><img src="images/img_43.png" alt="三"></div><div class="char-row"><div class="char-big">三</div><button class="speaker char-speaker" onclick="speakChar('三')" title="听发音">🔊</button></div><div class="char-pinyin">sān</div><div class="text-row"><div class="char-text">三朵白云天上飘，好像三只小绵羊。</div><button class="speaker text-speaker" onclick="speakPageText(43)" title="听句子">🔊</button></div><div class="page-num">43 / 50</div></div><div class="page" id="page-44"><div class="chapter-label">第九章：数字和天空</div><div class="char-illustration"><img src="images/img_44.png" alt="十"></div><div class="char-row"><div class="char-big">十</div><button class="speaker char-speaker" onclick="speakChar('十')" title="听发音">🔊</button></div><div class="char-pinyin">shí</div><div class="text-row"><div class="char-text">十字路口要小心，红灯停绿灯行。</div><button class="speaker text-speaker" onclick="speakPageText(44)" title="听句子">🔊</button></div><div class="page-num">44 / 50</div></div><div class="page" id="page-45"><div class="chapter-label">第九章：数字和天空</div><div class="char-illustration"><img src="images/img_45.png" alt="天"></div><div class="char-row"><div class="char-big">天</div><button class="speaker char-speaker" onclick="speakChar('天')" title="听发音">🔊</button></div><div class="char-pinyin">tiān</div><div class="text-row"><div class="char-text">蓝蓝的天空真高，太阳公公笑着瞧。</div><button class="speaker text-speaker" onclick="speakPageText(45)" title="听句子">🔊</button></div><div class="page-num">45 / 50</div></div><div class="page chapter-page" id="page-ch9"><div class="chapter-title">第十章：汉字的智慧树</div><div class="chapter-chars">休 林 明 看 森</div><div class="page-num">第 10 章 / 共 10 章</div></div><div class="page" id="page-46"><div class="chapter-label">第十章：汉字的智慧树</div><div class="char-illustration"><img src="images/img_46.png" alt="休"></div><div class="char-row"><div class="char-big">休</div><button class="speaker char-speaker" onclick="speakChar('休')" title="听发音">🔊</button></div><div class="char-pinyin">xiū</div><div class="text-row"><div class="char-text">走累了就在树下休息，一会儿再回家。</div><button class="speaker text-speaker" onclick="speakPageText(46)" title="听句子">🔊</button></div><div class="page-num">46 / 50</div></div><div class="page" id="page-47"><div class="chapter-label">第十章：汉字的智慧树</div><div class="char-illustration"><img src="images/img_47.png" alt="林"></div><div class="char-row"><div class="char-big">林</div><button class="speaker char-speaker" onclick="speakChar('林')" title="听发音">🔊</button></div><div class="char-pinyin">lín</div><div class="text-row"><div class="char-text">树林里真凉快，两棵小树像朋友。</div><button class="speaker text-speaker" onclick="speakPageText(47)" title="听句子">🔊</button></div><div class="page-num">47 / 50</div></div><div class="page" id="page-48"><div class="chapter-label">第十章：汉字的智慧树</div><div class="char-illustration"><img src="images/img_48.png" alt="明"></div><div class="char-row"><div class="char-big">明</div><button class="speaker char-speaker" onclick="speakChar('明')" title="听发音">🔊</button></div><div class="char-pinyin">míng</div><div class="text-row"><div class="char-text">天亮了，明亮的太阳和月亮说再见。</div><button class="speaker text-speaker" onclick="speakPageText(48)" title="听句子">🔊</button></div><div class="page-num">48 / 50</div></div><div class="page" id="page-49"><div class="chapter-label">第十章：汉字的智慧树</div><div class="char-illustration"><img src="images/img_49.png" alt="看"></div><div class="char-row"><div class="char-big">看</div><button class="speaker char-speaker" onclick="speakChar('看')" title="听发音">🔊</button></div><div class="char-pinyin">kàn</div><div class="text-row"><div class="char-text">手搭凉棚看远处，风景真美丽。</div><button class="speaker text-speaker" onclick="speakPageText(49)" title="听句子">🔊</button></div><div class="page-num">49 / 50</div></div><div class="page" id="page-50"><div class="chapter-label">第十章：汉字的智慧树</div><div class="char-illustration"><img src="images/img_50.png" alt="森"></div><div class="char-row"><div class="char-big">森</div><button class="speaker char-speaker" onclick="speakChar('森')" title="听发音">🔊</button></div><div class="char-pinyin">sēn</div><div class="text-row"><div class="char-text">森林里有很多树，小鸟在中间安家。</div><button class="speaker text-speaker" onclick="speakPageText(50)" title="听句子">🔊</button></div><div class="page-num">50 / 50</div></div>
+</div>
+
+<!-- 测验区 -->
+<div class="quiz" id="quizArea">
+  <div class="quiz-modes" id="quizModes">
+    <button class="active" onclick="setQuizMode('chapter')">📖 本章</button>
+    <button onclick="setQuizMode('random')">🎲 随机10字</button>
+  </div>
+  <div class="quiz-question">🔊 听一听，是哪个字？</div>
+  <button class="speaker" id="replayBtn" onclick="replayQuizChar()" style="display:block;margin:8px auto 16px;" title="再听一次">🔊</button>
+  <div class="quiz-options" id="quizOptions"></div>
+  <div class="quiz-feedback" id="quizFeedback"></div>
+</div>
+
+<!-- 测验结果 -->
+<div class="result" id="resultArea">
+  <h2>🎉 测验完成！</h2>
+  <div class="score" id="resultScore"></div>
+  <div class="msg" id="resultMsg"></div>
+  <div class="needs-work" id="resultWeak"></div>
+  <button onclick="retryQuiz()">🔄 再来一次</button>
+  <button class="secondary" onclick="switchMode('read')">📖 回去看看</button>
+</div>
+
+<script>
+var QUIZ_DATA = [{"id": 1, "char": "山", "chapter": 0}, {"id": 2, "char": "水", "chapter": 0}, {"id": 3, "char": "日", "chapter": 0}, {"id": 4, "char": "月", "chapter": 0}, {"id": 5, "char": "火", "chapter": 0}, {"id": 6, "char": "木", "chapter": 1}, {"id": 7, "char": "田", "chapter": 1}, {"id": 8, "char": "雨", "chapter": 1}, {"id": 9, "char": "云", "chapter": 1}, {"id": 10, "char": "土", "chapter": 1}, {"id": 11, "char": "人", "chapter": 2}, {"id": 12, "char": "口", "chapter": 2}, {"id": 13, "char": "目", "chapter": 2}, {"id": 14, "char": "手", "chapter": 2}, {"id": 15, "char": "足", "chapter": 2}, {"id": 16, "char": "鸟", "chapter": 3}, {"id": 17, "char": "鱼", "chapter": 3}, {"id": 18, "char": "马", "chapter": 3}, {"id": 19, "char": "牛", "chapter": 3}, {"id": 20, "char": "羊", "chapter": 3}, {"id": 21, "char": "米", "chapter": 4}, {"id": 22, "char": "瓜", "chapter": 4}, {"id": 23, "char": "果", "chapter": 4}, {"id": 24, "char": "竹", "chapter": 4}, {"id": 25, "char": "豆", "chapter": 4}, {"id": 26, "char": "父", "chapter": 5}, {"id": 27, "char": "母", "chapter": 5}, {"id": 28, "char": "子", "chapter": 5}, {"id": 29, "char": "女", "chapter": 5}, {"id": 30, "char": "好", "chapter": 5}, {"id": 31, "char": "上", "chapter": 6}, {"id": 32, "char": "下", "chapter": 6}, {"id": 33, "char": "大", "chapter": 6}, {"id": 34, "char": "小", "chapter": 6}, {"id": 35, "char": "中", "chapter": 6}, {"id": 36, "char": "刀", "chapter": 7}, {"id": 37, "char": "门", "chapter": 7}, {"id": 38, "char": "车", "chapter": 7}, {"id": 39, "char": "舟", "chapter": 7}, {"id": 40, "char": "衣", "chapter": 7}, {"id": 41, "char": "一", "chapter": 8}, {"id": 42, "char": "二", "chapter": 8}, {"id": 43, "char": "三", "chapter": 8}, {"id": 44, "char": "十", "chapter": 8}, {"id": 45, "char": "天", "chapter": 8}, {"id": 46, "char": "休", "chapter": 9}, {"id": 47, "char": "林", "chapter": 9}, {"id": 48, "char": "明", "chapter": 9}, {"id": 49, "char": "看", "chapter": 9}, {"id": 50, "char": "森", "chapter": 9}];
+var TOTAL = QUIZ_DATA.length;
+var CHAPTERS = [{"title": "第一章：大自然的朋友", "start": 1, "end": 5}, {"title": "第二章：美丽的大地", "start": 6, "end": 10}, {"title": "第三章：看看我的身体", "start": 11, "end": 15}, {"title": "第四章：可爱的动物们", "start": 16, "end": 20}, {"title": "第五章：美味的食物", "start": 21, "end": 25}, {"title": "第六章：我的一家人", "start": 26, "end": 30}, {"title": "第七章：上下和大小", "start": 31, "end": 35}, {"title": "第八章：生活好帮手", "start": 36, "end": 40}, {"title": "第九章：数字和天空", "start": 41, "end": 45}, {"title": "第十章：汉字的智慧树", "start": 46, "end": 50}];
+var TOTAL_CHAPTERS = CHAPTERS.length;
+
+var currentPage = 0;
+var currentMode = 'read';
+var quizRound = 0;
+var quizResults = [];
+var quizIndex = 0;
+var quizOrder = [];
+var quizMode = 'chapter';
+var allQuizResults = [];
+var speechReady = false;
+
+// 预加载语音列表（Chrome 异步加载）
+window.speechSynthesis.getVoices();
+window.speechSynthesis.onvoiceschanged = function() {
+  window.speechSynthesis.getVoices();
+};
+
+function showPage(n) {
+  var pages = document.querySelectorAll('.page.active');
+  for (var i = 0; i < pages.length; i++) { pages[i].classList.remove('active'); }
+  var el = document.getElementById('page-' + n);
+  if (el) { el.classList.add('active'); currentPage = n; }
+  updateSidebarHighlight();
+  window.scrollTo({top: 0, behavior: 'smooth'});
+  if (speechReady) {
+    setTimeout(function() { autoSpeakPage(); }, 400);
+  }
+}
+
+// ── 循环翻页（限当前章节）──
+function prevPage() {
+  var ci = -1;
+  for (var i = 0; i < TOTAL_CHAPTERS; i++) { if (currentPage >= CHAPTERS[i].start && currentPage <= CHAPTERS[i].end) { ci = i; break; } }
+  if (ci < 0) { showPage(currentPage > 1 ? currentPage - 1 : TOTAL); return; }
+  showPage(currentPage > CHAPTERS[ci].start ? currentPage - 1 : CHAPTERS[ci].end);
+}
+function nextPage() {
+  var ci = -1;
+  for (var i = 0; i < TOTAL_CHAPTERS; i++) { if (currentPage >= CHAPTERS[i].start && currentPage <= CHAPTERS[i].end) { ci = i; break; } }
+  if (ci < 0) { showPage(currentPage < TOTAL ? currentPage + 1 : 1); return; }
+  showPage(currentPage < CHAPTERS[ci].end ? currentPage + 1 : CHAPTERS[ci].start);
+}
+
+// ── 侧边栏 ──
+function initSidebar() {
+  var list = document.getElementById('sidebarList');
+  list.innerHTML = '';
+  for (var i = 0; i < TOTAL_CHAPTERS; i++) {
+    list.innerHTML += '<button class="sidebar-item" onclick="jumpToChapter(' + i + ')">' + CHAPTERS[i].title + '</button>';
+  }
+}
+function toggleSidebar() {
+  var s = document.getElementById('sidebar');
+  var o = document.getElementById('sidebarOverlay');
+  var show = !s.classList.contains('show');
+  s.classList.toggle('show', show);
+  o.classList.toggle('show', show);
+}
+function jumpToChapter(ci) {
+  document.getElementById('sidebar').classList.remove('show');
+  document.getElementById('sidebarOverlay').classList.remove('show');
+  showPage(CHAPTERS[ci].start);
+}
+function updateSidebarHighlight() {
+  var ci = -1;
+  for (var i = 0; i < TOTAL_CHAPTERS; i++) { if (currentPage >= CHAPTERS[i].start && currentPage <= CHAPTERS[i].end) { ci = i; break; } }
+  var items = document.querySelectorAll('.sidebar-item');
+  for (var i = 0; i < items.length; i++) { items[i].classList.toggle('active', i === ci); }
+}
+
+// ── 测验模式切换 ──
+function setQuizMode(mode) {
+  quizMode = mode;
+  var btns = document.querySelectorAll('#quizModes button');
+  for (var i = 0; i < btns.length; i++) { btns[i].classList.remove('active'); }
+  if (mode === 'chapter') btns[0].classList.add('active');
+  else btns[1].classList.add('active');
+  startQuiz();
+}
+
+// ── 模式切换 ──
+function switchMode(mode) {
+  currentMode = mode;
+  var btnRead = document.getElementById('btnRead');
+  var btnQuiz = document.getElementById('btnQuiz');
+  if (btnRead) btnRead.classList.toggle('active', mode === 'read');
+  if (btnQuiz) btnQuiz.classList.toggle('active', mode === 'quiz');
+  var pages = document.querySelectorAll('.page.active');
+  for (var i = 0; i < pages.length; i++) { pages[i].classList.remove('active'); }
+  var qa = document.getElementById('quizArea');
+  var ra = document.getElementById('resultArea');
+  var bp = document.getElementById('btnPrev');
+  var bn = document.getElementById('btnNext');
+  if (mode === 'read') {
+    if (qa) qa.classList.remove('active');
+    if (ra) ra.classList.remove('active');
+    if (bp) bp.style.display = '';
+    if (bn) bn.style.display = '';
+    showPage(currentPage || 1);
+  } else {
+    if (bp) bp.style.display = 'none';
+    if (bn) bn.style.display = 'none';
+    if (ra) ra.classList.remove('active');
+    if (qa) qa.classList.add('active');
+    startQuiz();
+  }
+}
+
+// ── 测验逻辑 ──
+function shuffle(arr) {
+  var a = arr.slice();
+  for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; }
+  return a;
+}
+
+function startQuiz() {
+  stopSpeak();
+  quizRound++; quizResults = []; quizIndex = 0;
+  var pool = [];
+  if (quizMode === 'chapter') {
+    var ci = -1;
+    for (var i = 0; i < TOTAL_CHAPTERS; i++) { if (currentPage >= CHAPTERS[i].start && currentPage <= CHAPTERS[i].end) { ci = i; break; } }
+    if (ci >= 0) { for (var i = CHAPTERS[ci].start - 1; i < CHAPTERS[ci].end; i++) pool.push(i); }
+  } else {
+    var all = []; for (var i = 0; i < TOTAL; i++) all.push(i);
+    pool = shuffle(all).slice(0, 10);
+  }
+  quizOrder = shuffle(pool);
+  var fb = document.getElementById('quizFeedback'); if (fb) { fb.textContent = ''; fb.className = 'quiz-feedback'; }
+  showQuizQuestion();
+}
+
+var currentQuizChar = '';
+function replayQuizChar() { if (currentQuizChar) speak(currentQuizChar, null); }
+
+function showQuizQuestion() {
+  if (quizIndex >= quizOrder.length) { showQuizResult(); return; }
+  var ci = quizOrder[quizIndex];
+  var q = QUIZ_DATA[ci];
+  currentQuizChar = q.char;
+  setTimeout(function() { speak(q.char, null); }, 300);
+  var wrongIndices = shuffle(QUIZ_DATA.map(function(_, i) { return i; }).filter(function(i) { return i !== ci; })).slice(0, 3);
+  var opts = shuffle([ci].concat(wrongIndices));
+  var h = '';
+  for (var oi = 0; oi < opts.length; oi++) { var o = QUIZ_DATA[opts[oi]]; h += '<button onclick="answerQuiz(' + ci + ',' + o.id + ',this)">' + o.char + '</button>'; }
+  var qo = document.getElementById('quizOptions'); if (qo) qo.innerHTML = h;
+  var fb = document.getElementById('quizFeedback'); if (fb) { fb.textContent = ''; fb.className = 'quiz-feedback'; }
+}
+
+function answerQuiz(correctIdx, chosenId, btnEl) {
+  var correct = (correctIdx + 1 === chosenId);
+  quizResults.push({ char: QUIZ_DATA[correctIdx].char, correct: correct });
+  var allBtns = document.querySelectorAll('#quizOptions button');
+  for (var i = 0; i < allBtns.length; i++) {
+    allBtns[i].disabled = true;
+    var m = allBtns[i].getAttribute('onclick').match(/,(\d+),/);
+    if (m && parseInt(m[1]) === correctIdx + 1) allBtns[i].classList.add('correct');
+  }
+  if (!correct && btnEl) btnEl.classList.add('wrong');
+  var fb = document.getElementById('quizFeedback');
+  if (fb) { fb.textContent = correct ? '答对了！' + QUIZ_DATA[correctIdx].char : '这个是「' + QUIZ_DATA[correctIdx].char + '」，记住它哦！'; fb.className = 'quiz-feedback ' + (correct ? 'good' : 'bad'); }
+  quizIndex++;
+  setTimeout(showQuizQuestion, 1200);
+}
+
+function showQuizResult() {
+  var qa = document.getElementById('quizArea'), ra = document.getElementById('resultArea');
+  var bp = document.getElementById('btnPrev'), bn = document.getElementById('btnNext');
+  if (qa) qa.classList.remove('active'); if (ra) ra.classList.add('active');
+  if (bp) bp.style.display = 'none'; if (bn) bn.style.display = 'none';
+  var cc = 0; for (var i = 0; i < quizResults.length; i++) { if (quizResults[i].correct) cc++; }
+  var qt = quizResults.length, pct = qt > 0 ? cc / qt : 0;
+  var rs = document.getElementById('resultScore'); if (rs) rs.textContent = cc + ' / ' + qt;
+  var msg = pct === 1 ? '太厉害了！全部认识！' : pct >= 0.75 ? '很棒！' : pct >= 0.5 ? '不错哦~' : '没关系，再来一次！';
+  var ml = quizMode === 'chapter' ? '章节测验' : '随机10字';
+  var rm = document.getElementById('resultMsg'); if (rm) rm.textContent = ml + ' · 第' + quizRound + '轮 - ' + msg;
+  var weak = []; for (var i = 0; i < quizResults.length; i++) { if (!quizResults[i].correct) weak.push(quizResults[i].char); }
+  var uw = []; for (var i = 0; i < weak.length; i++) { if (uw.indexOf(weak[i]) === -1) uw.push(weak[i]); }
+  var rw = document.getElementById('resultWeak');
+  if (rw) {
+    if (uw.length > 0) {
+      var h = '<p style="font-size:18px;color:#8a5040;margin-bottom:8px;">需要多看看的字：</p>';
+      for (var i = 0; i < uw.length; i++) { h += '<span data-char="' + uw[i] + '" class="jump-link" title="点击查看" style="display:inline-block;font-size:48px;margin:6px;padding:8px 16px;background:#fff0e0;border-radius:12px;cursor:pointer;">' + uw[i] + '</span>'; }
+      rw.innerHTML = h;
+      var links = rw.querySelectorAll('.jump-link');
+      for (var li = 0; li < links.length; li++) { links[li].addEventListener('click', function() { jumpToChar(this.getAttribute('data-char')); }); }
+    } else { rw.innerHTML = '<p style="font-size:18px;color:#5a9030;">全部掌握啦！</p>'; }
+  }
+}
+
+function retryQuiz() {
+  var ra = document.getElementById('resultArea'), qa = document.getElementById('quizArea');
+  if (ra) ra.classList.remove('active'); if (qa) qa.classList.add('active');
+  startQuiz();
+}
+
+function jumpToChar(c) {
+  switchMode('read');
+  var idx = -1; for (var i = 0; i < QUIZ_DATA.length; i++) { if (QUIZ_DATA[i].char === c) { idx = i; break; } }
+  if (idx >= 0) showPage(idx + 1);
+}
+
+// ── 保留原 TTS 代码（从原始文件复制）──
+var currentSpeaker = null;
+function stopSpeak() {
+  window.speechSynthesis.cancel();
+  if (currentSpeaker) { currentSpeaker.classList.remove('playing'); currentSpeaker = null; }
+}
+
+function getVoice() {
+  var voices = window.speechSynthesis.getVoices();
+  var preferred = ['Tingting', 'Ting-Ting', 'Meijia', 'Yating', 'Sin-Ji'];
+  for (var p = 0; p < preferred.length; p++) {
+    for (var i = 0; i < voices.length; i++) {
+      if (voices[i].name.indexOf(preferred[p]) !== -1) return voices[i];
+    }
+  }
+  for (var i = 0; i < voices.length; i++) {
+    if ((voices[i].lang === 'zh-CN' || voices[i].lang === 'zh-TW') && voices[i].name.toLowerCase().indexOf('female') === -1) continue;
+    if (voices[i].lang === 'zh-CN' || voices[i].lang === 'zh-TW') return voices[i];
+  }
+  for (var i = 0; i < voices.length; i++) {
+    if (voices[i].lang.indexOf('zh') === 0) return voices[i];
+  }
+  return null;
+}
+
+function speak(text, btn) {
+  stopSpeak();
+  if (!text) return;
+  var u = new SpeechSynthesisUtterance(text);
+  u.lang = 'zh-CN';
+  u.pitch = 1.25;
+  u.rate = 0.8;
+  u.volume = 1;
+  var voice = getVoice();
+  if (voice) u.voice = voice;
+  if (btn) { btn.classList.add('playing'); currentSpeaker = btn; }
+  u.onend = function() { if (btn) btn.classList.remove('playing'); currentSpeaker = null; };
+  u.onerror = function() { if (btn) btn.classList.remove('playing'); currentSpeaker = null; };
+  window.speechSynthesis.speak(u);
+}
+
+function speakChar(c) {
+  var row = document.getElementById('page-' + (currentPage || 1));
+  var btn = row ? row.querySelector('.char-speaker') : null;
+  speak(c, btn);
+}
+
+function speakPageText(pageNum) {
+  var row = document.getElementById('page-' + pageNum);
+  var btn = row ? row.querySelector('.text-speaker') : null;
+  var textDiv = row ? row.querySelector('.char-text') : null;
+  var text = textDiv ? textDiv.textContent : '';
+  speak(text, btn);
+}
+
+function autoSpeakPage() {
+  stopSpeak();
+  var c = QUIZ_DATA[currentPage - 1];
+  if (!c) return;
+  var row = document.getElementById('page-' + currentPage);
+  var charBtn = row ? row.querySelector('.char-speaker') : null;
+  speak(c.char, charBtn);
+  setTimeout(function() {
+    var txtBtn = row ? row.querySelector('.text-speaker') : null;
+    var textDiv = row ? row.querySelector('.char-text') : null;
+    var t = textDiv ? textDiv.textContent : '';
+    speak(t, txtBtn);
+  }, 800);
+}
+
+// 首次点击页面任意位置激活朗读
+document.addEventListener('click', function enableSpeech() {
+  if (!speechReady) {
+    speechReady = true;
+    autoSpeakPage();
+  }
+}, { once: true });
+
+initSidebar();
+showPage(1);
+</script>
+
+</body>
+</html>
