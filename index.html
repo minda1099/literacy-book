@@ -316,6 +316,7 @@ function answerQuiz(correctIdx, chosenId, btnEl) {
   if (!correct && btnEl) btnEl.classList.add('wrong');
   var fb = document.getElementById('quizFeedback');
   if (fb) { fb.textContent = correct ? '太棒了！' : '这个是「' + QUIZ_DATA[correctIdx].char + '」，记住它哦！'; fb.className = 'quiz-feedback ' + (correct ? 'good' : 'bad'); }
+  if (correct) speak('太棒了', null);
   quizIndex++;
   setTimeout(showQuizQuestion, 1200);
 }
@@ -331,6 +332,7 @@ function showQuizResult() {
   var wrongCount = qt - cc;
   var msg = cc === qt ? '你太厉害了，都认对了！' : '错了' + wrongCount + '个，加油！';
   var rm = document.getElementById('resultMsg'); if (rm) rm.textContent = msg;
+  setTimeout(function() { speak(msg, null); }, 400);
   var weak = []; for (var i = 0; i < quizResults.length; i++) { if (!quizResults[i].correct) weak.push(quizResults[i].char); }
   var uw = []; for (var i = 0; i < weak.length; i++) { if (uw.indexOf(weak[i]) === -1) uw.push(weak[i]); }
   var rw = document.getElementById('resultWeak');
