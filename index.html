@@ -434,7 +434,7 @@ document.addEventListener('click', function enableSpeech(e) {
   if (!speechReady) {
     var t = e.target;
     // 测验按钮、侧边栏、重播按钮不触发
-    if (t.closest && (t.closest('#quizModes') || t.closest('#quizOptions') || t.closest('#replayBtn') || t.closest('#sidebar') || t.closest('#resultArea') || t.closest('.chapter-icon'))) return;
+    if (t.closest && (t.closest('#quizModes') || t.closest('#quizOptions') || t.closest('#replayBtn') || t.closest('#sidebar') || t.closest('#resultArea') || t.closest('.chapter-icon') || t.closest('.mode-switch') || t.closest('.nav'))) return;
     speechReady = true;
     autoSpeakPage();
   }
