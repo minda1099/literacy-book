@@ -315,7 +315,7 @@ function answerQuiz(correctIdx, chosenId, btnEl) {
   }
   if (!correct && btnEl) btnEl.classList.add('wrong');
   var fb = document.getElementById('quizFeedback');
-  if (fb) { fb.textContent = correct ? '答对了！' + QUIZ_DATA[correctIdx].char : '这个是「' + QUIZ_DATA[correctIdx].char + '」，记住它哦！'; fb.className = 'quiz-feedback ' + (correct ? 'good' : 'bad'); }
+  if (fb) { fb.textContent = correct ? '太棒了！' : '这个是「' + QUIZ_DATA[correctIdx].char + '」，记住它哦！'; fb.className = 'quiz-feedback ' + (correct ? 'good' : 'bad'); }
   quizIndex++;
   setTimeout(showQuizQuestion, 1200);
 }
@@ -328,9 +328,9 @@ function showQuizResult() {
   var cc = 0; for (var i = 0; i < quizResults.length; i++) { if (quizResults[i].correct) cc++; }
   var qt = quizResults.length, pct = qt > 0 ? cc / qt : 0;
   var rs = document.getElementById('resultScore'); if (rs) rs.textContent = cc + ' / ' + qt;
-  var msg = pct === 1 ? '太厉害了！全部认识！' : pct >= 0.75 ? '很棒！' : pct >= 0.5 ? '不错哦~' : '没关系，再来一次！';
-  var ml = quizMode === 'chapter' ? '章节测验' : '随机10字';
-  var rm = document.getElementById('resultMsg'); if (rm) rm.textContent = ml + ' · 第' + quizRound + '轮 - ' + msg;
+  var wrongCount = qt - cc;
+  var msg = cc === qt ? '你太厉害了，都认对了！' : '错了' + wrongCount + '个，加油！';
+  var rm = document.getElementById('resultMsg'); if (rm) rm.textContent = msg;
   var weak = []; for (var i = 0; i < quizResults.length; i++) { if (!quizResults[i].correct) weak.push(quizResults[i].char); }
   var uw = []; for (var i = 0; i < weak.length; i++) { if (uw.indexOf(weak[i]) === -1) uw.push(weak[i]); }
   var rw = document.getElementById('resultWeak');
@@ -341,7 +341,7 @@ function showQuizResult() {
       rw.innerHTML = h;
       var links = rw.querySelectorAll('.jump-link');
       for (var li = 0; li < links.length; li++) { links[li].addEventListener('click', function() { jumpToChar(this.getAttribute('data-char')); }); }
-    } else { rw.innerHTML = '<p style="font-size:18px;color:#5a9030;">全部掌握啦！</p>'; }
+    } else { rw.innerHTML = '<p style="font-size:18px;color:#5a9030;">都认对了，太厉害了！</p>'; }
   }
 }
 
