@@ -429,9 +429,12 @@ function autoSpeakPage() {
   }, 800);
 }
 
-// 首次点击页面任意位置激活朗读
-document.addEventListener('click', function enableSpeech() {
+// 首次点击页面（阅读区或插图）激活朗读，测验按钮不触发
+document.addEventListener('click', function enableSpeech(e) {
   if (!speechReady) {
+    var t = e.target;
+    // 测验按钮、侧边栏、重播按钮不触发
+    if (t.closest && (t.closest('#quizModes') || t.closest('#quizOptions') || t.closest('#replayBtn') || t.closest('#sidebar') || t.closest('#resultArea') || t.closest('.chapter-icon'))) return;
     speechReady = true;
     autoSpeakPage();
   }
