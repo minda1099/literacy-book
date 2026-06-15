@@ -71,6 +71,20 @@ body { font-family: "STKaiti","Kaiti SC","KaiTi","PingFang SC","Microsoft YaHei"
 .result button.secondary { background: #e8c8a8; color: #5a3020; }
 .result button.secondary:hover { background: #d8b090; }
 
+/* ── 恭喜页 ── */
+.congrats-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 300; display: none; align-items: center; justify-content: center; }
+.congrats-overlay.show { display: flex; }
+.congrats-card { background: #fffef6; border-radius: 24px; padding: 40px 32px; max-width: 420px; width: 90%; text-align: center; box-shadow: 0 12px 48px rgba(0,0,0,0.2); }
+.congrats-card h2 { font-size: 32px; color: #e08050; margin-bottom: 12px; }
+.congrats-card .stars { font-size: 48px; margin-bottom: 16px; }
+.congrats-card p { font-size: 18px; color: #5a3020; line-height: 1.8; margin-bottom: 12px; }
+.congrats-card .qr-placeholder { width: 160px; height: 160px; margin: 16px auto; background: #f8f0e8; border-radius: 16px; display: flex; align-items: center; justify-content: center; color: #c8b8a8; font-size: 14px; }
+.congrats-card .wx-hint { font-size: 14px; color: #a08060; margin: 8px 0 20px; }
+.congrats-card button { font-size: 18px; padding: 12px 32px; border-radius: 28px; border: none; background: #e08050; color: #fff; cursor: pointer; font-family: inherit; }
+.congrats-card button:hover { background: #c06030; }
+.congrats-card button.close-btn { background: #e8c8a8; color: #5a3020; margin-left: 8px; }
+.congrats-card button.close-btn:hover { background: #d8b090; }
+
 /* ── 侧边栏 ── */
 .sidebar-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 200; display: none; }
 .sidebar-overlay.show { display: block; }
@@ -138,6 +152,18 @@ body { font-family: "STKaiti","Kaiti SC","KaiTi","PingFang SC","Microsoft YaHei"
   <button class="secondary" onclick="switchMode('read')">📖 回去看看</button>
 </div>
 
+<!-- 恭喜弹窗 -->
+<div class="congrats-overlay" id="congratsOverlay">
+  <div class="congrats-card">
+    <div class="stars">🌟🎉🌟</div>
+    <h2>太棒了！</h2>
+    <p>你已经认识了50个汉字！<br>想继续学习100个汉字吗？</p>
+    <div class="qr-placeholder">📱<br>公众号二维码</div>
+    <p class="wx-hint">扫码关注公众号，回复「100字」<br>免费领取完整版</p>
+    <button onclick="document.getElementById('congratsOverlay').classList.remove('show')">👈 回去再看看</button>
+  </div>
+</div>
+
 <script>
 var QUIZ_DATA = [{"id": 1, "char": "山", "chapter": 0}, {"id": 2, "char": "水", "chapter": 0}, {"id": 3, "char": "日", "chapter": 0}, {"id": 4, "char": "月", "chapter": 0}, {"id": 5, "char": "火", "chapter": 0}, {"id": 6, "char": "木", "chapter": 1}, {"id": 7, "char": "田", "chapter": 1}, {"id": 8, "char": "雨", "chapter": 1}, {"id": 9, "char": "云", "chapter": 1}, {"id": 10, "char": "土", "chapter": 1}, {"id": 11, "char": "人", "chapter": 2}, {"id": 12, "char": "口", "chapter": 2}, {"id": 13, "char": "目", "chapter": 2}, {"id": 14, "char": "手", "chapter": 2}, {"id": 15, "char": "足", "chapter": 2}, {"id": 16, "char": "鸟", "chapter": 3}, {"id": 17, "char": "鱼", "chapter": 3}, {"id": 18, "char": "马", "chapter": 3}, {"id": 19, "char": "牛", "chapter": 3}, {"id": 20, "char": "羊", "chapter": 3}, {"id": 21, "char": "米", "chapter": 4}, {"id": 22, "char": "瓜", "chapter": 4}, {"id": 23, "char": "果", "chapter": 4}, {"id": 24, "char": "竹", "chapter": 4}, {"id": 25, "char": "豆", "chapter": 4}, {"id": 26, "char": "父", "chapter": 5}, {"id": 27, "char": "母", "chapter": 5}, {"id": 28, "char": "子", "chapter": 5}, {"id": 29, "char": "女", "chapter": 5}, {"id": 30, "char": "好", "chapter": 5}, {"id": 31, "char": "上", "chapter": 6}, {"id": 32, "char": "下", "chapter": 6}, {"id": 33, "char": "大", "chapter": 6}, {"id": 34, "char": "小", "chapter": 6}, {"id": 35, "char": "中", "chapter": 6}, {"id": 36, "char": "刀", "chapter": 7}, {"id": 37, "char": "门", "chapter": 7}, {"id": 38, "char": "车", "chapter": 7}, {"id": 39, "char": "舟", "chapter": 7}, {"id": 40, "char": "衣", "chapter": 7}, {"id": 41, "char": "一", "chapter": 8}, {"id": 42, "char": "二", "chapter": 8}, {"id": 43, "char": "三", "chapter": 8}, {"id": 44, "char": "十", "chapter": 8}, {"id": 45, "char": "天", "chapter": 8}, {"id": 46, "char": "休", "chapter": 9}, {"id": 47, "char": "林", "chapter": 9}, {"id": 48, "char": "明", "chapter": 9}, {"id": 49, "char": "看", "chapter": 9}, {"id": 50, "char": "森", "chapter": 9}];
 var TOTAL = QUIZ_DATA.length;
@@ -180,6 +206,8 @@ function prevPage() {
   showPage(currentPage > CHAPTERS[ci].start ? currentPage - 1 : CHAPTERS[ci].end);
 }
 function nextPage() {
+  // 最后一章最后一页 → 弹出恭喜页
+  if (currentPage === TOTAL) { showCongrats(); return; }
   var ci = -1;
   for (var i = 0; i < TOTAL_CHAPTERS; i++) { if (currentPage >= CHAPTERS[i].start && currentPage <= CHAPTERS[i].end) { ci = i; break; } }
   if (ci < 0) { showPage(currentPage < TOTAL ? currentPage + 1 : 1); return; }
@@ -439,6 +467,12 @@ document.addEventListener('click', function enableSpeech(e) {
     autoSpeakPage();
   }
 }, { once: true });
+
+function showCongrats() {
+  stopSpeak();
+  document.getElementById('congratsOverlay').classList.add('show');
+  setTimeout(function() { speak('太棒了，你已经认识了五十个汉字！想继续学习一百个汉字吗？关注公众号领取完整版！', null); }, 500);
+}
 
 initSidebar();
 showPage(1);
