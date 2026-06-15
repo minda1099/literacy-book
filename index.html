@@ -276,14 +276,26 @@ function startQuiz() {
 }
 
 var currentQuizChar = '';
-function replayQuizChar() { if (currentQuizChar) speak(currentQuizChar, null); }
+function speakQuiz(text) {
+  stopSpeak();
+  if (!text) return;
+  var u = new SpeechSynthesisUtterance('哪个是' + text);
+  u.lang = 'zh-CN';
+  u.pitch = 1.2;
+  u.rate = 0.55;     // 更慢，让宝宝听清楚
+  u.volume = 1;
+  var voice = getVoice();
+  if (voice) u.voice = voice;
+  window.speechSynthesis.speak(u);
+}
+function replayQuizChar() { if (currentQuizChar) speakQuiz(currentQuizChar); }
 
 function showQuizQuestion() {
   if (quizIndex >= quizOrder.length) { showQuizResult(); return; }
   var ci = quizOrder[quizIndex];
   var q = QUIZ_DATA[ci];
   currentQuizChar = q.char;
-  setTimeout(function() { speak(q.char, null); }, 300);
+  setTimeout(function() { speakQuiz(q.char); }, 300);
   var wrongIndices = shuffle(QUIZ_DATA.map(function(_, i) { return i; }).filter(function(i) { return i !== ci; })).slice(0, 3);
   var opts = shuffle([ci].concat(wrongIndices));
   var h = '';
